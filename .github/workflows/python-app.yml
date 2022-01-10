@@ -22,5 +22,13 @@ jobs:
         python-version: "3.10"
     - name: Install Dependencies
       run: pip install -r requirements.txt
-    - name: Run Robot File
-      run: robot ./Tests/keyword_tests.robot
+    - name: Run Robot Tests
+      run: robot --loglevel DEBUG --outputdir ./Reports ./Tests/keyword_tests.robot
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        path: |
+          log.html
+          report.html
+          output.xml

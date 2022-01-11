@@ -5,6 +5,7 @@ Library           OperatingSystem
 Library           XML    use_lxml=True
 
 *** Variables ***
+&{headers}                           Content-Type=text/xml; charset=utf-8    Connection=close
 ${requests_dir}                      ${CURDIR}${/}Requests
 ${wsdl_correios_price_calculator}    http://ws.correios.com.br/calculador/CalcPrecoPrazo.asmx?wsdl
 ${wsdl_ip_geo}                       http://ws.cdyne.com/ip2geo/ip2geo.asmx?wsdl
@@ -15,13 +16,13 @@ ${request_string_500}                <soapenv:Envelope xmlns:soapenv="http://sch
 *** Test Cases ***
 Test read
     Create Soap Client    ${wsdl_calculator}
-    ${response}    Call SOAP Method With XML    ${requests_dir}${/}Request_Calculator.xml
+    ${response}    Call SOAP Method With XML    ${requests_dir}${/}Request_Calculator.xml    ${headers}
     ${result}    Get Data From XML By Tag    ${response}    AddResult
     should be equal    8    ${result}
 
 Test read string xml
     Create Soap Client    ${wsdl_calculator}
-    ${response}    Call SOAP Method With String XML  ${request_string}
+    ${response}    Call SOAP Method With String XML  ${request_string}    ${headers}
     ${result}    Get Data From XML By Tag    ${response}    AddResult
     should be equal    8    ${result}
 
@@ -42,7 +43,7 @@ Test Edit and Read
     Create Soap Client    ${wsdl_calculator}
     ${dict}    Create Dictionary    tem:intA=9    tem:intB=5
     ${xml_edited}    Edit XML Request    ${requests_dir}${/}Request_Calculator.xml    ${dict}    New_Request_Calculator
-    ${response}    Call SOAP Method With XML    ${xml_edited}
+    ${response}    Call SOAP Method With XML    ${xml_edited}    ${headers}
     ${result}    Get Data From XML By Tag    ${response}    AddResult
     should be equal    14    ${result}
     Should Exist    ${requests_dir}${/}New_Request_Calculator.xml
@@ -227,12 +228,12 @@ Test Edit XML Request 8
 
 Test Call SOAP Method with XML Anything
     Create Soap Client    ${wsdl_calculator}
-    ${response}    Call SOAP Method With XML  ${requests_dir}${/}Request_Calculator_500.xml    status=anything
+    ${response}    Call SOAP Method With XML  ${requests_dir}${/}Request_Calculator_500.xml    ${headers}    anything
     ${result}    Get Data From XML By Tag    ${response}    faultstring
     log    ${result}
 
 Test Call SOAP Method with String XML Anything
     Create Soap Client    ${wsdl_calculator}
-    ${response}    Call SOAP Method With String XML  ${request_string_500}    status=anything
+    ${response}    Call SOAP Method With String XML  ${request_string_500}    ${headers}    	anything
     ${result}    Get Data From XML By Tag    ${response}    faultstring
     log    ${result}

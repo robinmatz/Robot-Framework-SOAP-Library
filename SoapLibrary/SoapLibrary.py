@@ -1,17 +1,19 @@
-import os
-import logging.config
-import warnings
 import base64
-from .config import DICT_CONFIG
+import logging.config
+import os
+import warnings
+
 from requests import Session
 from requests.auth import HTTPBasicAuth
-from zeep import Client
-from zeep.transports import Transport
-from zeep.wsdl.utils import etree
 from robot.api import logger
 from robot.api.deco import keyword
 from six import iteritems
 from urllib3.exceptions import InsecureRequestWarning
+from zeep import Client
+from zeep.transports import Transport
+from zeep.wsdl.utils import etree
+
+from .config import DICT_CONFIG
 from .version import VERSION
 
 logging.config.dictConfig(DICT_CONFIG)
@@ -19,11 +21,11 @@ logging.config.dictConfig(DICT_CONFIG)
 warnings.simplefilter("ignore", InsecureRequestWarning)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-DEFAULT_HEADERS = {'Content-Type': 'text/xml; charset=utf-8'}
+DEFAULT_HEADERS = {"Content-Type": "text/xml; charset=utf-8"}
 
 
 class SoapLibrary:
-    ROBOT_LIBRARY_SCOPE = 'TEST SUITE'
+    ROBOT_LIBRARY_SCOPE = "TEST SUITE"
     ROBOT_LIBRARY_VERSION = VERSION
 
     def __init__(self):
@@ -62,10 +64,10 @@ class SoapLibrary:
         session.cert = client_cert
         session.auth = HTTPBasicAuth(*auth) if auth else None
         self.client = Client(self.url, transport=Transport(session=session))
-        logger.info('Connected to: %s' % self.client.wsdl.location)
+        logger.info("Connected to: %s" % self.client.wsdl.location)
         info = self.client.service.__dict__
         operations = info["_operations"]
-        logger.info('Available operations: %s' % operations.keys())
+        logger.info("Available operations: %s" % operations.keys())
 
     @keyword("Call SOAP Method With XML")
     def call_soap_method_xml(self, xml, headers=DEFAULT_HEADERS, status=None):
@@ -89,12 +91,19 @@ class SoapLibrary:
         # TODO check with different headers: 'SOAPAction': self.url + '/%s' % method}
         raw_text_xml = self._convert_xml_to_raw_text(xml)
         xml_obj = etree.fromstring(raw_text_xml)
-        response = self.client.transport.post_xml(address=self.url, envelope=xml_obj, headers=headers)
+        response = self.client.transport.post_xml(
+            address=self.url, envelope=xml_obj, headers=headers
+        )
         etree_response = self._parse_from_unicode(response.text)
-        logger.debug('URL: %s' % response.url)
-        logger.debug(etree.tostring(etree_response, pretty_print=True, encoding='unicode'))
+        logger.debug("URL: %s" % response.url)
+        logger.debug(
+            etree.tostring(etree_response, pretty_print=True, encoding="unicode")
+        )
         if status is None and response.status_code != 200:
-            raise AssertionError('Request Error! Status Code: %s! Reason: %s' % (response.status_code, response.reason))
+            raise AssertionError(
+                "Request Error! Status Code: %s! Reason: %s"
+                % (response.status_code, response.reason)
+            )
         self._print_request_info(etree_response)
         return etree_response
 
@@ -123,14 +132,22 @@ class SoapLibrary:
         if isinstance(data_list, (float, int)):
             return int(data_list)
         if len(data_list) == 0:
-            logger.warn('The search "%s" did not return any result! Please confirm the tag!' % xpath)
+            logger.warn(
+                'The search "%s" did not return any result! Please confirm the tag!'
+                % xpath
+            )
         elif len(data_list) > 1:
-            logger.warn('The tag you entered found %s items, returning the text in the index '
-                        'number %s, if you want a different index inform the argument index=N' % (len(data_list), index))
+            logger.warn(
+                "The tag you entered found %s items, returning the text in the index "
+                "number %s, if you want a different index inform the argument index=N"
+                % (len(data_list), index)
+            )
         return data_list[new_index].text
 
     @keyword("Edit XML Request")
-    def edit_xml(self, xml_file_path, new_values_dict, edited_request_name, repeated_tags='All'):
+    def edit_xml(
+        self, xml_file_path, new_values_dict, edited_request_name, repeated_tags="All"
+    ):
         """
         Changes a field on the given XML to a new given value, the values must be in a dictionary.
         xml_filepath must be a "template" of the request to the webservice.
@@ -165,13 +182,15 @@ class SoapLibrary:
             xml_xpath = self._replace_xpath_by_local_name(key)
             count = int(xml.xpath(("count(%s)" % xml_xpath)))
             logger.debug("Found %s tags with xpath %s" % (str(count), xml_xpath))
-            if repeated_tags == 'All' or count < 2:
+            if repeated_tags == "All" or count < 2:
                 for i in range(count):
                     xml.xpath(xml_xpath)[i].text = value
             else:
                 xml.xpath(xml_xpath)[int(repeated_tags)].text = value
         # Create new file with replaced request
-        new_file_path = self._save_to_file(os.path.dirname(xml_file_path), edited_request_name, etree.tostring(xml))
+        new_file_path = self._save_to_file(
+            os.path.dirname(xml_file_path), edited_request_name, etree.tostring(xml)
+        )
         return new_file_path
 
     @keyword("Save XML To File")
@@ -190,7 +209,9 @@ class SoapLibrary:
         *Example*:
         | ${response_file}= | Save XML To File |  ${response} | ${CURDIR} | response_file_name |
         """
-        new_file_path = self._save_to_file(save_folder, file_name, etree.tostring(etree_xml, pretty_print=True))
+        new_file_path = self._save_to_file(
+            save_folder, file_name, etree.tostring(etree_xml, pretty_print=True)
+        )
         return new_file_path
 
     @keyword("Convert XML Response to Dictionary")
@@ -209,7 +230,7 @@ class SoapLibrary:
         result = {}
         for element in xml_etree.iterchildren():
             # Remove namespace prefix
-            key = element.tag.split('}')[1] if '}' in element.tag else element.tag
+            key = element.tag.split("}")[1] if "}" in element.tag else element.tag
             # Process element as tree element if the inner XML contains non-whitespace content
             if element.text and element.text.strip():
                 value = element.text
@@ -260,10 +281,12 @@ class SoapLibrary:
         | ${response_decoded}= | Decode Base64 | ${response} |
         """
         response_decode = base64.b64decode(response)
-        return response_decode.decode('utf-8', 'ignore')
+        return response_decode.decode("utf-8", "ignore")
 
     @keyword("Call SOAP Method With String XML")
-    def call_soap_method_string_xml(self, string_xml, headers=DEFAULT_HEADERS, status=None):
+    def call_soap_method_string_xml(
+        self, string_xml, headers=DEFAULT_HEADERS, status=None
+    ):
         """
         Send an string representation of XML as a request to the SOAP client.
         The SOAP method is inside the XML string.
@@ -283,12 +306,19 @@ class SoapLibrary:
         """
         # TODO check with different headers: 'SOAPAction': self.url + '/%s' % method}
         xml_obj = etree.fromstring(string_xml)
-        response = self.client.transport.post_xml(address=self.url, envelope=xml_obj, headers=headers)
+        response = self.client.transport.post_xml(
+            address=self.url, envelope=xml_obj, headers=headers
+        )
         etree_response = self._parse_from_unicode(response.text)
-        logger.debug('URL: %s' % response.url)
-        logger.debug(etree.tostring(etree_response, pretty_print=True, encoding='unicode'))
+        logger.debug("URL: %s" % response.url)
+        logger.debug(
+            etree.tostring(etree_response, pretty_print=True, encoding="unicode")
+        )
         if status is None and response.status_code != 200:
-            raise AssertionError('Request Error! Status Code: %s! Reason: %s' % (response.status_code, response.reason))
+            raise AssertionError(
+                "Request Error! Status Code: %s! Reason: %s"
+                % (response.status_code, response.reason)
+            )
         self._print_request_info(etree_response)
         return etree_response
 
@@ -300,8 +330,8 @@ class SoapLibrary:
         :param xml_file_path: xml file path
         :return: string with xml content
         """
-        file_content = open(xml_file_path, 'r')
-        xml = ''
+        file_content = open(xml_file_path, "r")
+        xml = ""
         for line in file_content:
             xml += line
         file_content.close()
@@ -311,12 +341,12 @@ class SoapLibrary:
     def _parse_from_unicode(unicode_str):
         """
         Parses a unicode string.
-        
+
         :param unicode_str: unicode string
         :return: parsed string
         """
-        utf8_parser = etree.XMLParser(encoding='utf-8')
-        string_utf8 = unicode_str.encode('utf-8')
+        utf8_parser = etree.XMLParser(encoding="utf-8")
+        string_utf8 = unicode_str.encode("utf-8")
         return etree.fromstring(string_utf8, parser=utf8_parser)
 
     def _parse_xpath(self, tags):
@@ -326,7 +356,7 @@ class SoapLibrary:
         :param tags: string for a single xml tag or list for multiple xml tags
         :return:
         """
-        xpath = ''
+        xpath = ""
         if isinstance(tags, list):
             for el in tags:
                 xpath += self._replace_xpath_by_local_name(el)
@@ -338,7 +368,7 @@ class SoapLibrary:
     def _convert_string_to_xml(xml_string):
         """
         Converts a given string to xml object using etree.
-        
+
         :param xml_string: string with xml content
         :return: xml object
         """
@@ -368,13 +398,17 @@ class SoapLibrary:
         """
         new_file_name = "%s.xml" % file_name
         new_file_path = os.path.join(save_folder, new_file_name)
-        request_file = open(new_file_path, 'wb')
+        request_file = open(new_file_path, "wb")
         request_file.write(text)
         request_file.close()
         return new_file_path
 
     @staticmethod
     def _print_request_info(etree_response):
-        log_header_response_from_ws = '<font size="3"><b>Response from webservice:</b></font> '
+        log_header_response_from_ws = (
+            '<font size="3"><b>Response from webservice:</b></font> '
+        )
         logger.info(log_header_response_from_ws, html=True)
-        logger.info(etree.tostring(etree_response, pretty_print=True, encoding='unicode'))
+        logger.info(
+            etree.tostring(etree_response, pretty_print=True, encoding="unicode")
+        )

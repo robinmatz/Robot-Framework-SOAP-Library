@@ -1,9 +1,19 @@
+# IDE
 .idea/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+
+# Robotframework output
 response_test.xml
 report.html
 output.xml
 log.html
+
+# Virtual environment
+.venv
+venv
+.env
+env

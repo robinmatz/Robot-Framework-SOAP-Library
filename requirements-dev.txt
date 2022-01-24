@@ -1,6 +1,7 @@
 black
+coverage
+flake8
 invoke
 isort
-flake8
 robotframework-tidy
 -r requirements.txt
